@@ -23,7 +23,7 @@
     }
 
     body {
-      font-size: 16px;
+      font-size: 8px;
       box-sizing: border-box;
     }
 
@@ -35,6 +35,8 @@
     
     .anchors {
       height: 3rem;
+      border-radius: 1rem;
+      overflow: hidden;
     }
     .anchors__content {
       width: 100%;
@@ -68,7 +70,7 @@
 
     .content {
       width: 100%;
-      padding: 4rem 2rem 2rem;
+      padding: 3rem .5rem .5rem;
     }
 
     .component {
@@ -82,9 +84,10 @@
       justify-content: center;
       align-items: center;
       font-weight: bold;
-      font-size: 3rem;
+      font-size: 2rem;
+      text-align: center;
     }
-    .component--placeholder { min-height: 150px; background-color: #dbdbdb; font-size: 2rem; }
+    .component--placeholder { min-height: 150px; background-color: #dbdbdb; font-size: 1.5rem; }
     .component--a { min-height: 200px; background-color: #fff2f2; }
     .component--b { min-height: 250px; background-color: #f2fff6; }
     .component--c { min-height: 300px; background-color: #faf9e9; }
@@ -116,6 +119,15 @@
       background-color: #3e3e3e;
       font-size: 2rem;
       color: white;
+    }
+
+    @media screen and (min-width: 768px) {
+      body {
+        font-size: 16px;
+      }
+      .content {
+        padding: 4rem 2rem 2rem;
+      }
     }
   </style>
 </head>
