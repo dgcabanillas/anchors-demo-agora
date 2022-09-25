@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title> Anchors - PlazaVea </title>
+  <style>
+    html,
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
+        Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      background-color: transparent;
+      border: none;
+    }
+
+    body {
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    *, *::after, *::before {
+      padding: 0;
+      margin: 0;
+      box-sizing: inherit;
+    }
+    
+    .anchors {
+      height: 3rem;
+    }
+    .anchors__content {
+      width: 100%;
+      height: 3rem;
+      display: flex;
+      justify-content: space-around;
+      background-color: #333;
+      color: #fafafa;
+      box-shadow: 0px 50px 100px rgba(0, 0, 0, 0.1);
+    }
+    .anchors__content--fixed {
+      left: 0;
+      top: var(--anchors-fixed-position);
+      position: fixed;
+    }
+    .anchors__item {
+      display: block;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: inherit;
+      transition: all ease-in .3s;
+    }
+    .anchors__item:hover,
+    .anchors__item--active {
+      background-color: #727272;
+      cursor: pointer;
+    }
+
+    .content {
+      width: 100%;
+      padding: 4rem 2rem 2rem;
+    }
+
+    .component {
+      width: 100%;
+      margin: 2rem auto;
+      background: white;
+      color: #727272;
+      box-shadow: 0px 50px 100px rgba(0, 0, 0, 0.1);
+      border-radius: .625rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      font-size: 3rem;
+    }
+    .component--placeholder { min-height: 150px; background-color: #dbdbdb; font-size: 2rem; }
+    .component--a { min-height: 200px; background-color: #fff2f2; }
+    .component--b { min-height: 250px; background-color: #f2fff6; }
+    .component--c { min-height: 300px; background-color: #faf9e9; }
+
+    .header {
+      width: 100%;
+      height: fit-content;
+      background-color: #cc292e;
+      color: white;
+      position: fixed;
+      top: 0;
+    }
+    .header .elements {
+      height: 4rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 2rem;
+    }
+
+    .footer,
+    .banner {
+      width: 100%;
+      height: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #3e3e3e;
+      font-size: 2rem;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@16/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@16/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script 
+    src="https://cdnjs.cloudflare.com/ajax/libs/classnames/2.3.2/index.min.js" 
+    integrity="sha512-GqhSAi+WYQlHmNWiE4TQsVa7HVKctQMdgUMA+1RogjxOPdv9Kj59/no5BEvJgpvuMTYw2JRQu/szumfVXdowag==" 
+    crossorigin="anonymous" 
+    referrerpolicy="no-referrer"
+  ></script>
+
+  <!-- REACT CODE -->
+  <script type="text/babel">
+    const { useState, useEffect, createContext, useReducer, useContext, useRef } = React;
+
+
+    /* ============ BEGIN: CustomHooks  ============ */
+    const useVerticalScroll = ( cb ) => {
+      const callback = useRef(null);
+
+      useEffect(() => { callback.current = cb }, [cb])
+      useEffect(() => {
+        const handleScroll = () => {
+          callback.current && callback.current(window.scrollY || 0);
+        }
+        document.addEventListener('scroll', handleScroll);
+        return () => { document.removeEventListener('scroll', handleScroll) }
+      }, []);
+    } 
+    /* ============ END: CustomHooks  ============ */
+
+    /* ============ BEGIN: helpers  ============ */
+    const scrollToSelector = ( selector, offset = 0 ) => {
+      const element = document.querySelector(selector);
+      if ( element ) {
+        const top = element.offsetTop - offset;
+        window.scroll({ top, behavior: 'smooth' });
+      }
+    }
+    /* ============ END: helpers  ============ */
+    /* ============ BEGIN: utils  ============ */
+    const getHeightFrom = ( selectors = [] ) => {
+      return selectors.reduce((height, selector) => {
+        const node = document.querySelector(selector);
+        if ( node ) return height + node.getBoundingClientRect().height;
+        return height;
+      }, 0);
+    }
+    /* ============ END: utils  ============ */
+
+
+
+    /* ============ BEGIN: Components  ============ */
+    const Anchor = ({ anchor, active }) => {
+      const { id, text, href } = anchor;
+      const { setWantedComponent } = useContext(AppContext);
+
+      const handleClick = () => { setWantedComponent( href )}
+
+      return (
+        <button
+          className={classNames({
+            'anchors__item': true,
+            'anchors__item--active': active
+          })}
+          onClick={handleClick}
+        >
+          { text }
+        </button>
+      )
+    }
+    /* ======================== */
+    const Anchors = ({ id, data }) => {
+      const { anchors } = data;
+      const anchorsNode = useRef(null);
+      const scrollPosition = useRef(0);
+      const anchorFixedTopPosition = useRef(0);
+      const [isFixed, setIsFixed] = useState(false);
+      const [activeIndex, setActiveIndex] = useState(0);
+      const { viewedComponent, wantedComponent, setComponentAsLoaded } = useContext(AppContext);
+
+      const observeHeaderPosition = ( scrollY ) => {
+        if ( anchorsNode.current ) {
+          if ( isFixed ) {
+            if ( scrollPosition.current >= scrollY ) {
+              setIsFixed( false );
+            }
+          } else {
+            const headerNode = document.getElementById('header');
+            if ( headerNode ) {
+              const headerReact = headerNode.getBoundingClientRect();
+              const anchorsRect = anchorsNode.current.getBoundingClientRect();
+              if ( anchorsRect.top <= headerReact.bottom ) {
+                scrollPosition.current = scrollY;
+                anchorFixedTopPosition.current = headerReact.bottom;
+                setIsFixed( true );
+              }
+            }
+          }
+        }
+      }
+      useVerticalScroll(observeHeaderPosition);
+      useEffect(() => { setComponentAsLoaded(id) }, []);
+
+      return (
+        <div id={id} className='anchors'>
+          <div
+            ref={anchorsNode}
+            className={classNames({
+              'anchors__content': true,
+              'anchors__content--fixed': isFixed
+            })}
+            style={{ '--anchors-fixed-position': anchorFixedTopPosition.current + 'px' }}
+          >
+            { 
+              anchors.map((anchor) => {
+                return (
+                  <Anchor 
+                    key={anchor.id} 
+                    anchor={anchor} 
+                    active={
+                      viewedComponent?.id === anchor.href 
+                      || wantedComponent?.id === anchor.href
+                    }
+                  />
+                )
+              })
+            }  
+          </div>  
+        </div>
+      )
+    }
+    /* ======================== */
+    const PlaceholderComponent = ({ id, data }) => {
+      return (
+        <div 
+          id={id} 
+          className="component component--placeholder"
+        > 
+          Empty { data.text } 
+        </div>
+      )
+    }
+    /* ======================== */
+    const Component = ({ id, data, className }) => {
+      const [response, setResponse] = useState(null);
+      const { setComponentAsLoaded } = useContext(AppContext);
+
+      useEffect(() => {
+        const execFetch = async () => {
+          const res = await fakeFetch();
+          setResponse(res);
+          setComponentAsLoaded(id);
+        }
+        execFetch();
+      }, []);
+      
+      const fakeFetch = () => {
+        console.log('cargando el componente: ', id );
+        const promise = new Promise((resolve) => {
+          setTimeout(() => {
+            resolve(true)
+          }, Math.random() * 1501 + 1500 );
+        });
+        return promise;
+      }
+
+      if( !response ) return (<PlaceholderComponent id={id} data={data}/>)
+
+      return (
+        <div
+          id={id} 
+          className={classNames({
+            'component': true,
+            [className]: !!className
+          })}
+        > 
+          Component - { data.text }
+        </div>
+      )
+    }
+    /* ======================== */
+    const Content = () => {
+      const { componentsToRender, amountToRender } = useContext(AppContext);
+      return (
+        <div className="content">
+          {
+            componentsToRender.map((component, idx) => {
+              if( idx >= amountToRender ) {
+                return (
+                  <PlaceholderComponent 
+                    id={component.id} 
+                    key={component.id} 
+                    data={component.data}
+                  />
+                );
+              }
+                
+              const Wrapper = component.wrapper;
+              return (
+                <Wrapper 
+                  id={component.id}
+                  key={component.id} 
+                  data={component.data} 
+                  className={component.className}
+                />
+              )
+            })
+          }  
+        </div>
+      )
+    }
+    const Header = () => {
+      return (
+        <header id='header' className="header"> 
+           <div className="elements"> HEADER </div>
+           { false && <div className="elements"> HEADER TABS </div> }
+        </header>
+      )
+    }
+    const Footer = () => {
+      return (<footer className="footer"> FOOTER </footer>)
+    }
+    /* ============ END: Components  ============ */
+
+
+
+    /* ============ BEGIN: App context ============ */
+    const AppContext = createContext();
+    const appReducer = (state, action) => {
+      const { componentsToRender, wantedComponent } = state;
+      switch ( action.type ) {
+        case 'SET_STATE': 
+          return { ...state, ...action.payload };
+        case 'SET_COMPONENT_AS_LOADED':
+          const cmps2render = componentsToRender.map(component => ({ 
+            ...component, 
+            isLoaded: action.payload === component.id ? true : component.isLoaded
+          }));
+          const wantedCmp = wantedComponent?.id === action.payload 
+            ? { ...wantedComponent, isLoaded: true } 
+            : wantedComponent
+          return { 
+            ...state, 
+            wantedComponent: wantedCmp,
+            componentsToRender: cmps2render
+          }
+        default: 
+          return state; 
+      }
+    };
+    const STATE = {
+      amountToRender: 0,
+      wantedComponent: null,
+      viewedComponent: null,
+      componentsToRender: [],
+    }
+    const AppProvider = ({ children, components }) => {
+      const marginTop = 16;
+      const amountToLoad = 5;
+      const offset = useRef(0);
+      const [state, dispatch] = useReducer(appReducer, STATE);
+
+      useEffect(() => {
+        const cmps2render = components.map(( component, idx) => ({ 
+          ...component,
+          index: idx,
+          isLoaded: false
+        }))
+        dispatch({
+          type: 'SET_STATE',
+          payload: {
+            amountToRender: amountToLoad,
+            componentsToRender: cmps2render
+          }
+        })
+      }, [])
+
+      const observeViewedComponent = ( scrollY ) => {
+        const positions = [];
+        const lastIndex = state.componentsToRender - 1;
+        state.componentsToRender.forEach((component, idx ) => {
+          const element = document.getElementById(component.id);
+          element 
+            ? positions.push( element.offsetTop )
+            : positions.push( idx === 0 ? 0 : positions[idx-1] )
+          lastIndex === idx && (
+            element 
+              ? positions.push( element.offsetTop + element.offsetHeight )
+              : positions.push( idx === 0 ? 0 : positions[idx-1] )
+          )
+        })
+
+        offset.current = getHeightFrom(['#header', '.anchors']) + marginTop;
+        for( let idx = 0; idx < positions.length - 1; idx++ ) {
+          const topPosition = scrollY + offset.current;
+          const isInside = positions[idx] <= topPosition && topPosition < positions[idx + 1];
+          if ( !isInside ) continue;
+          if ( state.viewedComponent?.id === state.componentsToRender[idx].id ) return;
+          dispatch({
+            type: 'SET_STATE', 
+            payload: { 
+              viewedComponent: state.componentsToRender[idx] 
+            }
+          })
+          return;
+        }
+      }
+      useVerticalScroll(observeViewedComponent);
+      useEffect(() => {
+        const { viewedComponent, amountToRender, componentsToRender } = state;
+        if ( viewedComponent ) {
+          const minimumAmountToRender = Math.min(viewedComponent.index + amountToLoad, componentsToRender.length);
+          if ( amountToRender < minimumAmountToRender ) {
+            dispatch({
+              type: 'SET_STATE',
+              payload: {
+                amountToRender: minimumAmountToRender
+              }
+            })
+          }
+        }
+      }, [state.viewedComponent])
+
+      useEffect(() => {
+        const { wantedComponent, componentsToRender, amountToRender } = state;
+        if ( !wantedComponent ) return;
+
+        const minimumAmountToRender = Math.max(wantedComponent.index + amountToLoad, amountToRender);
+        const pendingComponentsToLoad = componentsToRender.filter(cmp => cmp.index < minimumAmountToRender && !cmp.isLoaded);
+        const areThereComponentsToLoad = pendingComponentsToLoad.length > 0;
+
+        if ( areThereComponentsToLoad ) {
+          if ( minimumAmountToRender > amountToRender ) {
+            dispatch({ type: 'SET_STATE', payload: { amountToRender: minimumAmountToRender }})
+          }
+        }
+
+        if ( wantedComponent.isLoaded ) {
+          scrollToSelector(`#${wantedComponent.id}`, offset.current - marginTop * .25);
+          if ( !areThereComponentsToLoad ) {
+            dispatch({ type: 'SET_STATE', payload: { wantedComponent: null }});
+          }
+        }
+      }, [state.wantedComponent, state.componentsToRender])
+
+      const setComponentAsLoaded = ( id ) => dispatch({ type: 'SET_COMPONENT_AS_LOADED', payload: id })
+      const setWantedComponent = ( id ) => {
+        const wantedComponent = state.componentsToRender.find(component => component.id === id );
+        console.log ( 'clicked component:', wantedComponent );
+        dispatch({ type: 'SET_STATE', payload: { wantedComponent }});
+      }
+
+      return (
+        <AppContext.Provider 
+          value={{
+            ...state,
+            setWantedComponent,
+            setComponentAsLoaded
+          }}
+        >
+          { children }
+        </AppContext.Provider>
+      )
+    }
+    /* ============ END: App context ============ */
+
+
+
+    /* ============ BEGIN: App  ============ */
+    const App = () => {
+      const classes = ['component--a', 'component--b', 'component--c'];
+      const anchors = [];
+      const components = [];
+
+      [...Array(15)].forEach((_, idx) => {
+        if( Math.random() <= 1 ) {
+          anchors.push({
+            id: `anchor-${idx}`,
+            href: `component-${idx}`,
+            text: idx
+          })
+        }
+        if( Math.random() <= 1 ) {
+          components.push({
+            id: `component-${idx}`,
+            className: classes[Math.floor(Math.random() * 3)],
+            wrapper: Component,
+            data: { text: idx }
+          })
+        }
+      })
+
+      components.unshift({
+        id: 'anchors-0',
+        wrapper: Anchors,
+        data: { anchors }
+      })
+
+      components.unshift({
+        id: 'banner-0',
+        wrapper: Component,
+        className: 'banner',
+        data: { text: 'Banner Principal' }
+      })
+
+      console.log('all components: ', components);
+
+      useEffect(() => {
+        setTimeout(() => { window.scrollTo(0, 0) }, 300);
+      }, []);
+
+      return (
+        <div>
+          <Header />
+          <AppProvider components={components}>
+            <Content />
+          </AppProvider>
+          <Footer />
+        </div>
+      )
+    }
+    ReactDOM.render(<App />, document.getElementById('root'))
+    /* ============ END: App  ============ */
+  </script>
+</body>
+</html>
